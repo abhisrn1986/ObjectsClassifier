@@ -6,6 +6,7 @@ import os
 import numpy as np
 import cv2
 from tensorflow import keras
+from dl_models import NNType
 
 from tensorflow.keras.preprocessing.image import (
     img_to_array,
@@ -15,19 +16,44 @@ from tensorflow.keras.preprocessing.image import (
 from tensorflow.keras.utils import to_categorical
 
 
-def import_class_imgs(data_dir, classes, batch_size = 128):
+def import_class_imgs(data_dir, classes, nn_type, batch_size = 128):
 
-    data_gen = keras.preprocessing.image.ImageDataGenerator(
-    # define the preprocessing function that should be applied to all images
-    preprocessing_function=keras.applications.mobilenet_v2.preprocess_input,
-    
-    rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        horizontal_flip=True, 
-        zoom_range=0.2
-    
-    )
+    if(nn_type == NNType.MOBLIE_NET):
+        data_gen = keras.preprocessing.image.ImageDataGenerator(
+        # define the preprocessing function that should be applied to all images
+        preprocessing_function=keras.applications.mobilenet_v2.preprocess_input,
+
+            rotation_range=20,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            horizontal_flip=True, 
+            zoom_range=0.2
+
+        )
+    elif(nn_type == NNType.VGG16):
+        data_gen = keras.preprocessing.image.ImageDataGenerator(
+        # define the preprocessing function that should be applied to all images
+        preprocessing_function=keras.applications.vgg16.preprocess_input,
+
+            rotation_range=20,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            horizontal_flip=True, 
+            zoom_range=0.2
+
+        )
+    elif(nn_type == NNType.RES_NET):
+        data_gen = keras.preprocessing.image.ImageDataGenerator(
+        # define the preprocessing function that should be applied to all images
+        preprocessing_function=keras.applications.resnet_v2.preprocess_input,
+
+            rotation_range=20,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            horizontal_flip=True, 
+            zoom_range=0.2
+
+        )
 
     train_data_gen = data_gen.flow_from_directory(
         directory=data_dir,

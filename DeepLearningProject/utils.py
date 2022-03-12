@@ -48,17 +48,17 @@ def init_cam(width, height):
     return cap
 
 
-def add_text(text, frame):
+def add_text(text, frame, pos = (30,30), font_size = 1.0, thickness = 2):
     # Put some rectangular box on the image
     # cv2.putText()
     new_frame = cv2.putText(
     img = frame,
     text = text,
-    org = (30, 30),
+    org = pos,
     fontFace = cv2.FONT_HERSHEY_DUPLEX,
-    fontScale = 1.0,
+    fontScale = font_size,
     color = (255, 255, 255),
-    thickness = 2
+    thickness = thickness
     )
     return new_frame
 

@@ -28,7 +28,8 @@ import numpy as np
 class NNType(Enum):
     CNN = 1
     VGG16 = 2
-    MOBLIE_NET = 3 
+    MOBLIE_NET = 3
+    RES_NET = 4
 
 
 def get_cnn_model(x_data, y_data):
@@ -72,7 +73,7 @@ def get_mobile_net_model(x_data, y_data, classes):
 
     base_model = keras.applications.mobilenet_v2.MobileNetV2(
     weights='imagenet', 
-    alpha=0.35,         # specific parameter of this model, small alpha reduces the number of overall weights
+    alpha=1.4,         # specific parameter of this model, small alpha reduces the number of overall weights
     pooling='avg',      # applies global average pooling to the output of the last conv layer (like a flattening)
     include_top=False,  # we only want to have the base, not the final dense layers 
     input_shape=(224, 224, 3)
@@ -104,6 +105,82 @@ def get_mobile_net_model(x_data, y_data, classes):
             validation_split=0.3)
 
     return model
+
+
+def get_res_net_model(x_data, y_data, classes):
+
+
+    base_model = keras.applications.ResNet50V2(
+    weights='imagenet', 
+    pooling='avg',      # applies global average pooling to the output of the last conv layer (like a flattening)
+    include_top=False,  # we only want to have the base, not the final dense layers 
+    input_shape=(224, 224, 3)
+    )
+
+    # freeze it!
+    base_model.trainable = False
+
+    model = keras.Sequential()
+    model.add(base_model)
+    model.add(keras.layers.Dense(100, activation='relu'))
+    model.add(keras.layers.Dropout(0.5))
+    model.add(keras.layers.Dense(len(classes), activation='softmax'))
+    # have a look at the trainable and non-trainable params statistic
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
+              loss=keras.losses.categorical_crossentropy,
+              metrics=[keras.metrics.categorical_accuracy])
+
+    # observe the validation loss and stop when it does not improve after 3 iterations
+    callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+
+    model.fit(x_data, y_data, 
+            epochs=50, 
+            verbose=2,
+            batch_size=len(x_data), 
+            callbacks=[callback],
+            # use 30% of the data for validation
+            validation_split=0.3)
+
+    return model
+
+
+
+# def get_effecient_net_model(x_data, y_data, classes):
+
+#     base_model = keras.applications.EfficientNetB7(
+#     weights='imagenet', 
+#     pooling='avg',      # applies global average pooling to the output of the last conv layer (like a flattening)
+#     include_top=False,  # we only want to have the base, not the final dense layers 
+#     input_shape=(224, 224, 3)
+#     )
+
+#     # freeze it!
+#     base_model.trainable = False
+
+#     model = keras.Sequential()
+#     model.add(base_model)
+#     model.add(keras.layers.Dense(100, activation='relu'))
+#     model.add(keras.layers.Dropout(0.5))
+#     model.add(keras.layers.Dense(len(classes), activation='softmax'))
+#     # have a look at the trainable and non-trainable params statistic
+
+#     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
+#               loss=keras.losses.categorical_crossentropy,
+#               metrics=[keras.metrics.categorical_accuracy])
+
+#     # observe the validation loss and stop when it does not improve after 3 iterations
+#     callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+
+#     model.fit(x_data, y_data, 
+#             epochs=50, 
+#             verbose=2,
+#             batch_size=len(x_data), 
+#             callbacks=[callback],
+#             # use 30% of the data for validation
+#             validation_split=0.3)
+
+#     return model
 
 
 def get_vgg16_model(x_data, y_data, classes) :
@@ -157,6 +234,9 @@ def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, model_file_p
             model.save(model_file_path)
         if(NNType.MOBLIE_NET == nn_type):
             model = get_mobile_net_model(x_data, y_data, classes)
+            model.save(model_file_path)
+        if(NNType.RES_NET == nn_type):
+            model = get_res_net_model(x_data, y_data, classes)
             model.save(model_file_path)
     else :
         model = load_model(model_file_path)
