@@ -17,8 +17,8 @@ from tensorflow.keras.models import Sequential
 class NNType(Enum):
     CNN = 1
     VGG16 = 2
-    MOBLIE_NET = 3
-    RES_NET = 4
+    MOBILE_NET_V2 = 3
+    RES_NET_V2 = 4
 
 
 def get_model_filename(model, base_path):
@@ -33,13 +33,13 @@ def get_model_filename(model, base_path):
 
 def fit_model(model, x_data, y_data) :
     callback = EarlyStopping(monitor='val_loss', patience=2)
-    model.fit(x_data, y_data, 
+    return model.fit(x_data, y_data, 
             epochs=50, 
             verbose=2,
             batch_size=len(x_data), 
             callbacks=[callback],
             # use 30% of the data for validation
-            validation_split=0.3)
+            validation_split=0.3).history
 
 
 
@@ -160,24 +160,25 @@ def get_vgg16_model(n_classes) :
 def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, models_dir = None):
 
     n_classes = len(classes)
+    hist = None
 
     if(NNType.CNN == nn_type):
         model = get_cnn_model(x_data)
     if(NNType.VGG16== nn_type):
         model = get_vgg16_model(n_classes)
-    if(NNType.MOBLIE_NET == nn_type):
+    if(NNType.MOBILE_NET_V2 == nn_type):
         model = get_mobile_net_model(n_classes)
-    if(NNType.RES_NET == nn_type):
+    if(NNType.RES_NET_V2 == nn_type):
         model = get_res_net_model(n_classes)
     model_file_path = get_model_filename(model, models_dir)
 
     if retrain or not os.path.exists(model_file_path):
-        fit_model(model, x_data, y_data)
+        hist = fit_model(model, x_data, y_data)
         model.save(model_file_path)
     else :
         model = load_model(model_file_path)
 
-    return model
+    return model, hist
 
 
 def classify_webcam_image(model, image, classes):
