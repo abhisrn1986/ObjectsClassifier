@@ -14,9 +14,9 @@ from utils import add_text, init_cam, key_action
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-g_nn_type = NNType.MOBILE_NET_V2
+g_nn_type = NNType.RES_NET_V2
 retrain = False
-g_load_model_file = False
+g_load_model_file = True
 
 if __name__ == '__main__':
 
@@ -38,9 +38,9 @@ if __name__ == '__main__':
 
 
     if(g_load_model_file):
-        model = load_model(models_path + "best_net_1.h5")
+        model = load_model(models_path + "best_net.h5")
     else:
-        model = get_nn_model(x_train, y_train, g_nn_type, classes, retrain, models_path)
+        model, hist = get_nn_model(x_train, y_train, g_nn_type, classes, retrain, models_path)
 
 
     try:

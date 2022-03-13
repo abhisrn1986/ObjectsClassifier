@@ -176,6 +176,7 @@ def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, models_dir =
         hist = fit_model(model, x_data, y_data)
         model.save(model_file_path)
     else :
+        logger.debug(f"Loaded model file {model_file_path}")
         model = load_model(model_file_path)
 
     return model, hist
