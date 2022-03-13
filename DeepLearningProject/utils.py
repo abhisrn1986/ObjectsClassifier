@@ -58,7 +58,8 @@ def add_text(text, frame, pos = (30,30), font_size = 1.0, thickness = 2):
     fontFace = cv2.FONT_HERSHEY_DUPLEX,
     fontScale = font_size,
     color = (255, 255, 255),
-    thickness = thickness
+    thickness = thickness,
+    lineType = cv2.LINE_AA
     )
     return new_frame
 

@@ -73,17 +73,14 @@ if __name__ == '__main__':
 
             prediction, category, max_prob = classify_webcam_image(model, image, classes)
 
-            # logger.debug(f'Prediction: {prediction}')
+            logger.debug(f'Prediction: {prediction}')
 
-
-            # format the text
+            # format the text and add to the overlay
             formatted_str = ''
             for icatg, catg in enumerate(classes) :
-                prob = round(prediction[icatg], 2)
-                formatted_str += f'{catg} : {prob}'
-
+                formatted_str += f'{catg[0]} : {prediction[icatg]:.2f} , '
+            formatted_str = formatted_str[:-2]
             add_text(formatted_str, frame, pos = (30,80), font_size=0.8, thickness=1)
-
             add_text(f'{category} : {max_prob}', frame)
 
             # disable ugly toolbar
