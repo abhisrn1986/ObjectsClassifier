@@ -17,7 +17,7 @@ from tensorflow.keras.utils import to_categorical
 
 def import_class_imgs(data_dir, classes, nn_type, batch_size = 128):
 
-    if(nn_type == NNType.MOBLIE_NET):
+    if(nn_type == NNType.MOBILE_NET_V2):
         data_gen = keras.preprocessing.image.ImageDataGenerator(
         # define the preprocessing function that should be applied to all images
         preprocessing_function=keras.applications.mobilenet_v2.preprocess_input,
@@ -41,7 +41,7 @@ def import_class_imgs(data_dir, classes, nn_type, batch_size = 128):
             zoom_range=0.2
 
         )
-    elif(nn_type == NNType.RES_NET):
+    elif(nn_type == NNType.RES_NET_V2):
         data_gen = keras.preprocessing.image.ImageDataGenerator(
         # define the preprocessing function that should be applied to all images
         preprocessing_function=keras.applications.resnet_v2.preprocess_input,
