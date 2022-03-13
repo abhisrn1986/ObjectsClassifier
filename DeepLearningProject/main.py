@@ -3,11 +3,10 @@ import logging.config
 
 logging.config.fileConfig('logging.conf')
 # create logger
-logger = logging.getLogger('global')
+logger = logging.getLogger('simpleExample')
 import os
-
 import cv2
-import numpy as np
+from keras.models import load_model
 
 from dl_models import NNType, classify_webcam_image, get_nn_model
 from image_importer import import_class_imgs
@@ -15,14 +14,9 @@ from utils import add_text, init_cam, key_action
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-
-g_nn_type = NNType.RES_NET
-retrain = True
-# g_model_file_name = 'cnn.h5'
-# g_model_file_name = 'mobile_net.h5'
-# g_model_file_name = 'mobile_net200.h5'
-g_model_file_name = 'resnet50_v2.h5'
-
+g_nn_type = NNType.MOBLIE_NET
+retrain = False
+g_load_model_file = False
 
 if __name__ == '__main__':
 
@@ -42,7 +36,11 @@ if __name__ == '__main__':
     logger.debug(f'Shape of the X {x_train.shape}')
     logger.debug(f'Shape of the y {y_train.shape}')
 
-    model = get_nn_model(x_train, y_train, g_nn_type, classes, retrain,  models_path+g_model_file_name)
+
+    if(g_load_model_file):
+        model = load_model(models_path + "best_net.h5")
+    else:
+        model = get_nn_model(x_train, y_train, g_nn_type, classes, retrain, models_path)
 
 
     try:
@@ -75,7 +73,7 @@ if __name__ == '__main__':
 
             prediction, category, max_prob = classify_webcam_image(model, image, classes)
 
-            logging.debug(f'Prediction: {prediction}')
+            # logger.debug(f'Prediction: {prediction}')
 
 
             # format the text
@@ -96,7 +94,7 @@ if __name__ == '__main__':
             
     finally:
         # when everything done, release the capture
-        logging.debug('quit webcam')
+        logger.debug('quit webcam')
         webcam.release()
         cv2.destroyAllWindows()
 

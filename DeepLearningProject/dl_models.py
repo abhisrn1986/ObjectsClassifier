@@ -1,29 +1,18 @@
 import logging
+logger = logging.getLogger('simpleExample')
 import os.path
 from enum import Enum
 
-from cv2 import COLOR_BGR2RGB, cvtColor
+import numpy as np
+from keras.layers.convolutional import Conv2D, MaxPooling2D
 from keras.models import load_model
 from tensorflow import keras
 # model for NN composed of stack of layers connected sequentially (Feed Forward Network)
 from tensorflow.keras import backend as K
-from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Dropout
-from tensorflow.keras.layers import Flatten
-from keras.layers.convolutional import Conv2D
-from keras.layers.convolutional import MaxPooling2D
-from tensorflow import keras
 
-
-from tensorflow.keras.preprocessing.image import (
-    img_to_array,
-    load_img,
-    save_img)
-
-import numpy as np
 
 class NNType(Enum):
     CNN = 1
@@ -32,7 +21,29 @@ class NNType(Enum):
     RES_NET = 4
 
 
-def get_cnn_model(x_data, y_data):
+def get_model_filename(model, base_path):
+    
+    filename = ""
+    for layer in model.layers:
+        filename += f'{layer.name}_{layer.output_shape[1]}_' 
+
+    model.summary(print_fn = logger.debug)
+    return base_path + filename[:-1] + '.h5'
+
+
+def fit_model(model, x_data, y_data) :
+    callback = EarlyStopping(monitor='val_loss', patience=2)
+    model.fit(x_data, y_data, 
+            epochs=50, 
+            verbose=2,
+            batch_size=len(x_data), 
+            callbacks=[callback],
+            # use 30% of the data for validation
+            validation_split=0.3)
+
+
+
+def get_cnn_model(x_data):
 
     nRows,nCols,nDims = x_data.shape[1:]
 
@@ -61,15 +72,12 @@ def get_cnn_model(x_data, y_data):
     model.add(Dropout(0.5))
     model.add(Dense(4, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    callback = EarlyStopping(monitor='val_loss', patience=3)
-
-    model.fit(x_data,y_data, epochs = 30, batch_size = 128, verbose = 1, callbacks = [callback], validation_split=0.2)
 
     return model
 
 
 
-def get_mobile_net_model(x_data, y_data, classes):
+def get_mobile_net_model(n_classes):
 
     base_model = keras.applications.mobilenet_v2.MobileNetV2(
     weights='imagenet', 
@@ -82,33 +90,22 @@ def get_mobile_net_model(x_data, y_data, classes):
     # freeze it!
     base_model.trainable = False
 
+
     model = keras.Sequential()
     model.add(base_model)
     model.add(keras.layers.Dense(100, activation='relu'))
     model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Dense(len(classes), activation='softmax'))
+    model.add(keras.layers.Dense(n_classes, activation='softmax'))
     # have a look at the trainable and non-trainable params statistic
 
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
               loss=keras.losses.categorical_crossentropy,
               metrics=[keras.metrics.categorical_accuracy])
 
-    # observe the validation loss and stop when it does not improve after 3 iterations
-    callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-
-    model.fit(x_data, y_data, 
-            epochs=50, 
-            verbose=2,
-            batch_size=len(x_data), 
-            callbacks=[callback],
-            # use 30% of the data for validation
-            validation_split=0.3)
-
     return model
 
 
-def get_res_net_model(x_data, y_data, classes):
-
+def get_res_net_model(n_classes):
 
     base_model = keras.applications.ResNet50V2(
     weights='imagenet', 
@@ -124,66 +121,17 @@ def get_res_net_model(x_data, y_data, classes):
     model.add(base_model)
     model.add(keras.layers.Dense(100, activation='relu'))
     model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Dense(len(classes), activation='softmax'))
+    model.add(keras.layers.Dense(n_classes, activation='softmax'))
     # have a look at the trainable and non-trainable params statistic
 
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
               loss=keras.losses.categorical_crossentropy,
               metrics=[keras.metrics.categorical_accuracy])
 
-    # observe the validation loss and stop when it does not improve after 3 iterations
-    callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-
-    model.fit(x_data, y_data, 
-            epochs=50, 
-            verbose=2,
-            batch_size=len(x_data), 
-            callbacks=[callback],
-            # use 30% of the data for validation
-            validation_split=0.3)
-
     return model
 
 
-
-# def get_effecient_net_model(x_data, y_data, classes):
-
-#     base_model = keras.applications.EfficientNetB7(
-#     weights='imagenet', 
-#     pooling='avg',      # applies global average pooling to the output of the last conv layer (like a flattening)
-#     include_top=False,  # we only want to have the base, not the final dense layers 
-#     input_shape=(224, 224, 3)
-#     )
-
-#     # freeze it!
-#     base_model.trainable = False
-
-#     model = keras.Sequential()
-#     model.add(base_model)
-#     model.add(keras.layers.Dense(100, activation='relu'))
-#     model.add(keras.layers.Dropout(0.5))
-#     model.add(keras.layers.Dense(len(classes), activation='softmax'))
-#     # have a look at the trainable and non-trainable params statistic
-
-#     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
-#               loss=keras.losses.categorical_crossentropy,
-#               metrics=[keras.metrics.categorical_accuracy])
-
-#     # observe the validation loss and stop when it does not improve after 3 iterations
-#     callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-
-#     model.fit(x_data, y_data, 
-#             epochs=50, 
-#             verbose=2,
-#             batch_size=len(x_data), 
-#             callbacks=[callback],
-#             # use 30% of the data for validation
-#             validation_split=0.3)
-
-#     return model
-
-
-def get_vgg16_model(x_data, y_data, classes) :
+def get_vgg16_model(n_classes) :
 
     base_model = keras.applications.vgg16.VGG16(
     weights='imagenet', 
@@ -199,45 +147,33 @@ def get_vgg16_model(x_data, y_data, classes) :
     model.add(base_model)
     model.add(keras.layers.Dense(100, activation='relu'))
     model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Dense(len(classes), activation='softmax'))
+    model.add(keras.layers.Dense(n_classes, activation='softmax'))
     # have a look at the trainable and non-trainable params statistic
 
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
               loss=keras.losses.categorical_crossentropy,
               metrics=[keras.metrics.categorical_accuracy])
 
-    # observe the validation loss and stop when it does not improve after 3 iterations
-    callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-
-    model.fit(x_data, y_data, 
-            epochs=50, 
-            verbose=2,
-            batch_size=len(x_data), 
-            callbacks=[callback],
-            # use 30% of the data for validation
-            validation_split=0.3)
-
     return model
 
 
-def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, model_file_path = None):
+def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, models_dir = None):
 
-    model = None
+    n_classes = len(classes)
+
+    if(NNType.CNN == nn_type):
+        model = get_cnn_model(x_data)
+    if(NNType.VGG16== nn_type):
+        model = get_vgg16_model(n_classes)
+    if(NNType.MOBLIE_NET == nn_type):
+        model = get_mobile_net_model(n_classes)
+    if(NNType.RES_NET == nn_type):
+        model = get_res_net_model(n_classes)
+    model_file_path = get_model_filename(model, models_dir)
 
     if retrain or not os.path.exists(model_file_path):
-
-        if(NNType.CNN == nn_type):
-            model = get_cnn_model(x_data, y_data)
-            model.save(model_file_path)
-        if(NNType.VGG16== nn_type):
-            model = get_vgg16_model(x_data, y_data, classes)
-            model.save(model_file_path)
-        if(NNType.MOBLIE_NET == nn_type):
-            model = get_mobile_net_model(x_data, y_data, classes)
-            model.save(model_file_path)
-        if(NNType.RES_NET == nn_type):
-            model = get_res_net_model(x_data, y_data, classes)
-            model.save(model_file_path)
+        fit_model(model, x_data, y_data)
+        model.save(model_file_path)
     else :
         model = load_model(model_file_path)
 

@@ -1,7 +1,6 @@
 # from asyncio.log import logger
 import logging
-from sys import stdout
-logger = logging.getLogger('global')
+logger = logging.getLogger('simpleExample')
 import os
 import numpy as np
 import cv2
