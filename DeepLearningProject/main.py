@@ -5,8 +5,10 @@ logging.config.fileConfig('logging.conf')
 # create logger
 logger = logging.getLogger('simpleExample')
 import os
+import math
 import cv2
 from keras.models import load_model
+import matplotlib.pyplot as plt
 
 from dl_models import NNType, classify_webcam_image, get_nn_model
 from image_importer import import_class_imgs
@@ -16,7 +18,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 g_nn_type = NNType.RES_NET_V2
 retrain = False
-g_load_model_file = True
+g_load_model_file = False
 
 if __name__ == '__main__':
 
@@ -71,7 +73,7 @@ if __name__ == '__main__':
             # extract the [224x224] rectangle out of it
             image = frame[y:y+width, x:x+width, :]
 
-            prediction, category, max_prob = classify_webcam_image(model, image, classes)
+            prediction, category, max_prob = classify_webcam_image(model, image, classes, g_nn_type)
 
             logger.debug(f'Prediction: {prediction}')
 
@@ -80,8 +82,13 @@ if __name__ == '__main__':
             for icatg, catg in enumerate(classes) :
                 formatted_str += f'{catg[0]} : {prediction[icatg]:.2f} , '
             formatted_str = formatted_str[:-2]
+
+            # map the color to red to green
+            mapped_color = plt.cm.RdYlGn(max_prob)
+            mapped_color = tuple(255 * x for x in mapped_color)
+            mapped_color[:-1]
             add_text(formatted_str, frame, pos = (30,80), font_size=0.8, thickness=1)
-            add_text(f'{category} : {max_prob}', frame)
+            add_text(f'{category} : {max_prob}', frame, color = mapped_color)
 
             # disable ugly toolbar
             cv2.namedWindow('frame', flags=cv2.WINDOW_GUI_NORMAL)              

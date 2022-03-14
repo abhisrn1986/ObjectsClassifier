@@ -182,11 +182,24 @@ def get_nn_model(x_data, y_data, nn_type, classes, retrain = False, models_dir =
     return model, hist
 
 
-def classify_webcam_image(model, image, classes):
+def classify_webcam_image(model, image, classes, nn_type):
 
     pic_array = keras.preprocessing.image.img_to_array(image)
     image_batch = np.expand_dims(pic_array, axis=0)
-    processed_image = keras.applications.mobilenet_v2.preprocess_input(image_batch)
+
+    if(nn_type == NNType.MOBILE_NET_V2):
+        processed_image = keras.applications.mobilenet_v2.preprocess_input(image_batch)
+
+    elif(nn_type == NNType.VGG16):
+        processed_image = keras.applications.vgg16.preprocess_input(image_batch)
+
+    elif(nn_type == NNType.RES_NET_V2):
+
+        processed_image = keras.applications.resnet_v2.preprocess_input(image_batch)
+    else:
+        processed_image = keras.applications.mobilenet_v2.preprocess_input(image_batch)
+
+
     prediction = model.predict(processed_image)
 
     max_prob = -1.0
