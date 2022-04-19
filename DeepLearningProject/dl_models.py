@@ -1,12 +1,17 @@
 import logging
 logger = logging.getLogger('simpleExample')
 import os.path
+import io
+import itertools
 from enum import Enum
 
 import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
 from keras.layers.convolutional import Conv2D, MaxPooling2D
 from keras.models import load_model
 from tensorflow import keras
+from sklearn.metrics import confusion_matrix
 # model for NN composed of stack of layers connected sequentially (Feed Forward Network)
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import EarlyStopping
@@ -30,14 +35,71 @@ def get_model_filename(model, base_path):
     model.summary(print_fn = logger.debug)
     return base_path + filename[:-1] + '.h5'
 
+def plot_to_image(figure):
+    """Converts the matplotlib plot specified by 'figure' to a PNG image and
+    returns it. The supplied figure is closed and inaccessible after this call."""
+    # Save the plot to a PNG in memory.
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    # Closing the figure prevents it from being displayed directly inside
+    # the notebook.
+    plt.close(figure)
+    buf.seek(0)
+    # Convert PNG buffer to TF image
+    image = tf.image.decode_png(buf.getvalue(), channels=4)
+    # Add the batch dimension
+    image = tf.expand_dims(image, 0)
+    return image
+
+def plot_confusion_matrix(cm, class_names):
+    """
+    Returns a matplotlib figure containing the plotted confusion matrix.
+
+    Args:
+    cm (array, shape = [n, n]): a confusion matrix of integer classes
+    class_names (array, shape = [n]): String names of the integer classes
+    """
+    figure = plt.figure(figsize=(8, 8))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title("Confusion matrix")
+    plt.colorbar()
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45)
+    plt.yticks(tick_marks, class_names)
+
+    # Compute the labels from the normalized confusion matrix.
+    labels = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=2)
+
+    # Use white text if squares are dark; otherwise black.
+    threshold = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        color = "white" if cm[i, j] > threshold else "black"
+        plt.text(j, i, labels[i, j], horizontalalignment="center", color=color)
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    return figure
+
+
 
 def fit_model(model, x_data, y_data) :
-    callback = EarlyStopping(monitor='val_loss', patience=2)
+
+    callbacks = []
+    callbacks.append(EarlyStopping(monitor='val_loss', patience=2))
+
+    # create logs for tensor board and to log confusion matrix fro each step
+    # Define the per-epoch callback.
+    cm_callback = keras.callbacks.LambdaCallback(on_epoch_end=log_confusion_matrix)
+
+
+
+
     return model.fit(x_data, y_data, 
             epochs=50, 
             verbose=2,
             batch_size=len(x_data), 
-            callbacks=[callback],
+            callbacks=callbacks,
             # use 30% of the data for validation
             validation_split=0.3).history
 
